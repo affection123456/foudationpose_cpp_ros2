@@ -57,7 +57,7 @@ class FoundationPoseService : public rclcpp::Node
       }
 
       // 发布检测结果
-      pub_pose_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("foundationpose/pose", 10);
+      pub_pose_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("/Current_OBJ_position_0", 10);
       pub_debug_image_ = this->create_publisher<sensor_msgs::msg::Image>("foundationpose/debug_image", 10);
       
     }
@@ -130,6 +130,7 @@ class FoundationPoseService : public rclcpp::Node
       for (auto& [foundation_pose, mesh_loader] : this->model_to_track_) {
         depth_img.convertTo(depth_img, CV_32FC1, 0.001);
         foundation_pose->Track(rgb_img.clone(), depth_img, out_pose, demo_name_, track_pose);
+        out_pose = track_pose;
         LOG(WARNING) << "Track Pose : " << track_pose;
 
         Eigen::Vector3f object_dimension = mesh_loader->GetObjectDimension();
@@ -137,7 +138,9 @@ class FoundationPoseService : public rclcpp::Node
         cv::cvtColor(regist_plot, regist_plot, cv::COLOR_RGB2BGR);
         auto draw_pose = ConvertPoseMesh2BBox(track_pose, mesh_loader);
         draw3DBoundingBox(this->rgb_K, draw_pose, 720, 1280, object_dimension, regist_plot);
-        cv::imwrite(this->debug_dir + "test_foundationpose_plot" + std::to_string(this->frame_id) + ".png", regist_plot);
+        // cv::imwrite(this->debug_dir + "test_foundationpose_plot" + std::to_string(this->frame_id) + ".png", regist_plot);
+        cv::imshow("test_foundationpose_result", regist_plot);
+        cv::waitKey(20);
       }
 
       // 发布 Pose
@@ -168,8 +171,8 @@ class FoundationPoseService : public rclcpp::Node
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_pose_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_debug_image_;
 
-    std::vector<std::string> obj_type_to_grasp = {"cup_tripple", "EM2E_left", "water_ybs"};
-    int type_num_track = 1;
+    std::vector<std::string> obj_type_to_grasp = {"cup_tripple", "EM2E_left", "water_ybs", "costa"};
+    int type_num_track = 3;
     std::string template_dir = "../auto_sam_service/template/grasp_bottle";
     std::vector<std::string> mesh_files;
 
@@ -184,7 +187,7 @@ class FoundationPoseService : public rclcpp::Node
     int refine_itr_;
 
     int frame_id = 0;
-    std::string debug_dir = "./det_res/pose/";
+    std::string debug_dir = "./det_res/img_res/";
 
     Eigen::Matrix3f rgb_K;
     Eigen::Vector3f object_dimension;
